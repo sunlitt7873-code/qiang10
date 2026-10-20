@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>抢10｜MVP 0.1</title>
+<style>
+  :root{
+    --bg:#f7f4ee;
+    --ink:#263238;
+    --muted:#6f7a80;
+    --card:#fffdf8;
+    --line:#ded8cd;
+    --accent:#e65d45;
+    --accent2:#f2b84b;
+    --good:#2d8b67;
+    --bad:#bb3f3f;
+    --shadow:0 10px 28px rgba(39,49,55,.10);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:linear-gradient(180deg,#fbf8f2 0%,#f3eee5 100%);
+    color:var(--ink);
+    min-height:100vh;
+  }
+  button{font:inherit}
+  .app{max-width:920px;margin:0 auto;padding:22px 16px 40px}
+  .panel{
+    background:rgba(255,255,255,.84);
+    backdrop-filter:blur(8px);
+    border:1px solid rgba(222,216,205,.9);
+    border-radius:26px;
+    box-shadow:var(--shadow);
+    padding:24px;
+  }
+  .hidden{display:none!important}
+  h1{font-size:44px;line-height:1;margin:0 0 10px;letter-spacing:-1px}
+  .subtitle{color:var(--muted);font-size:16px;margin-bottom:26px}
+  .mode-pill{
+    display:inline-flex;align-items:center;gap:8px;
+    background:#fff6e4;border:1px solid #f1d49e;color:#7c5a18;
+    border-radius:999px;padding:8px 12px;font-size:14px;margin-bottom:16px
+  }
+  .level-grid{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px
+  }
+  .level-btn{
+    text-align:left;background:var(--card);border:1px solid var(--line);
+    border-radius:18px;padding:18px;cursor:pointer;transition:.18s;
+  }
+  .level-btn:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(39,49,55,.08)}
+  .level-btn strong{display:block;font-size:20px;margin-bottom:6px}
+  .level-btn span{color:var(--muted);font-size:14px;line-height:1.55}
+  .footer-note{color:var(--muted);font-size:13px;margin-top:18px;line-height:1.6}
+  .topbar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:16px}
+  .statrow{display:flex;gap:8px;flex-wrap:wrap}
+  .stat{
+    background:#fff;border:1px solid var(--line);border-radius:999px;
+    padding:8px 12px;font-size:14px
+  }
+  .game-title{font-weight:800}
+  .board{
+    min-height:360px;border-radius:24px;background:#efe8dc;
+    border:1px solid #ded4c5;padding:22px;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    position:relative;overflow:hidden
+  }
+  .cards{
+    display:flex;gap:14px;flex-wrap:wrap;justify-content:center;align-items:center;
+    min-height:160px;width:100%;
+  }
+  .card{
+    width:130px;height:160px;border-radius:20px;background:var(--card);
+    border:2px solid transparent;box-shadow:0 10px 22px rgba(62,50,35,.11);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;user-select:none;position:relative;transition:.14s;
+  }
+  .card.revealing{animation:pop .22s ease}
+  .card.selected{border-color:var(--accent);transform:translateY(-6px)}
+  .card.disabled{opacity:.45;cursor:default}
+  .num{font-size:68px;font-weight:800;line-height:1}
+  .dots{width:92px;height:112px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:7px}
+  .dot{width:19px;height:19px;border-radius:50%;background:var(--ink);align-self:center;justify-self:center}
+  .empty{visibility:hidden}
+  @keyframes pop{from{transform:scale(.86);opacity:.1}to{transform:scale(1);opacity:1}}
+  .hint{
+    min-height:28px;margin-top:16px;color:var(--muted);text-align:center;font-size:15px
+  }
+  .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .bell{
+    border:none;border-radius:999px;padding:18px 32px;background:var(--accent);
+    color:white;font-weight:900;font-size:24px;cursor:pointer;
+    box-shadow:0 8px 0 #b84531,0 14px 24px rgba(230,93,69,.22);
+    min-width:210px;
+  }
+  .bell:active{transform:translateY(3px);box-shadow:0 5px 0 #b84531}
+  .secondary{
+    border:1px solid var(--line);background:white;border-radius:999px;padding:14px 20px;
+    color:var(--ink);font-weight:700;cursor:pointer
+  }
+  .secondary:disabled,.bell:disabled{opacity:.45;cursor:not-allowed}
+  .submit{
+    border:none;background:var(--ink);color:white;border-radius:999px;padding:14px 22px;
+    font-weight:800;cursor:pointer
+  }
+  .feedback{
+    position:absolute;inset:0;background:rgba(255,255,255,.92);
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    text-align:center;padding:24px;z-index:5;
+  }
+  .feedback .big{font-size:36px;font-weight:900;margin-bottom:8px}
+  .feedback.good .big{color:var(--good)}
+  .feedback.bad .big{color:var(--bad)}
+  .feedback p{margin:4px 0;color:var(--muted)}
+  .feedback button{margin-top:16px}
+  .progress{height:9px;border-radius:999px;background:#e6ded1;overflow:hidden;margin-bottom:16px}
+  .progress > div{height:100%;background:var(--accent2);width:0;transition:width .25s}
+  .summary{text-align:center}
+  .summary h2{font-size:34px;margin:4px 0 10px}
+  .scorebig{font-size:60px;font-weight:900;margin:12px 0}
+  .summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:20px 0}
+  .summary-box{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px}
+  .summary-box strong{display:block;font-size:24px;margin-bottom:4px}
+  .summary-box span{color:var(--muted);font-size:13px}
+  .tiny{font-size:12px;color:var(--muted);margin-top:10px}
+  @media (max-width:650px){
+    h1{font-size:38px}
+    .panel{padding:18px;border-radius:20px}
+    .level-grid{grid-template-columns:1fr}
+    .board{min-height:330px;padding:14px}
+    .card{width:92px;height:118px;border-radius:16px}
+    .num{font-size:50px}
+    .dots{width:68px;height:86px;gap:4px}
+    .dot{width:14px;height:14px}
+    .cards{gap:10px}
+    .bell{font-size:21px;min-width:180px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <section id="home" class="panel">
+    <div class="mode-pill">MVP 0.1 · 单人试玩版</div>
+    <h1>抢10</h1>
+    <div class="subtitle">看见关系，比谁先发现。先验证“发现10 → 抢铃 → 指出组合”的核心玩法。</div>
+    <div class="level-grid">
+      <button class="level-btn" data-level="1">
+        <strong>Level 1｜点卡凑10</strong>
+        <span>2张点卡，全部有解。建立“看到一个量，就想到还差多少”的直觉。</span>
+      </button>
+      <button class="level-btn" data-level="2">
+        <strong>Level 2｜数字凑10</strong>
+        <span>2张数字卡，加入无解题。开始训练判断和抑制冲动。</span>
+      </button>
+      <button class="level-btn" data-level="3">
+        <strong>Level 3｜三个数凑10</strong>
+        <span>3张数字卡，必须全部使用。训练多个数量之间的关系。</span>
+      </button>
+      <button class="level-btn" data-level="4">
+        <strong>Level 4｜干扰牌</strong>
+        <span>4张牌，从中选择2～3张凑10。第一版只保留唯一解。</span>
+      </button>
+    </div>
+    <div class="footer-note">
+      每个Level试玩10轮。看到可以凑10时按“🔔 抢10”，再点选组成10的牌；如果全部牌都出现后确定无解，可以点“没有10”。
+    </div>
+  </section>
+
+  <section id="game" class="panel hidden">
+    <div class="topbar">
+      <div class="game-title" id="levelName">Level</div>
+      <div class="statrow">
+        <div class="stat">第 <b id="roundNum">1</b>/10 轮</div>
+        <div class="stat">得分 <b id="score">0</b></div>
+        <button class="secondary" id="quitBtn">退出</button>
+      </div>
+    </div>
+    <div class="progress"><div id="progressBar"></div></div>
+
+    <div class="board" id="board">
+      <div class="cards" id="cards"></div>
+      <div class="hint" id="hint">准备……</div>
+
+      <div id="feedback" class="feedback hidden">
+        <div class="big" id="feedbackBig"></div>
+        <p id="feedbackText"></p>
+        <button class="secondary" id="nextBtn">下一轮</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="bell" id="bellBtn">🔔 抢10</button>
+      <button class="secondary" id="noTenBtn" disabled>没有10</button>
+      <button class="submit hidden" id="submitBtn">确认组合</button>
+    </div>
+    <div class="tiny">提示：Level 4 中，一旦已经出现合法组合，就可以提前抢，不必等4张全部翻完。</div>
+  </section>
+
+  <section id="summary" class="panel hidden summary">
+    <div class="mode-pill">本次试玩完成</div>
+    <h2 id="summaryTitle">Level 完成</h2>
+    <div class="scorebig" id="finalScore">0</div>
+    <div>总分</div>
+    <div class="summary-grid">
+      <div class="summary-box"><strong id="accuracy">0%</strong><span>判断正确率</span></div>
+      <div class="summary-box"><strong id="avgReaction">—</strong><span>平均反应时间</span></div>
+      <div class="summary-box"><strong id="correctCount">0</strong><span>正确轮数</span></div>
+      <div class="summary-box"><strong id="wrongCount">0</strong><span>错误轮数</span></div>
+    </div>
+    <button class="bell" id="retryBtn">再玩一次</button>
+    <button class="secondary" id="homeBtn" style="margin-left:10px">换一个Level</button>
+  </section>
+</div>
+
+<script>
+const LEVELS = {
+  1:{name:"Level 1｜点卡凑10",speed:2500},
+  2:{name:"Level 2｜数字凑10",speed:2200},
+  3:{name:"Level 3｜三个数凑10",speed:2000},
+  4:{name:"Level 4｜干扰牌",speed:1800}
+};
+
+let level = 1, round = 0, score = 0, results = [], rounds = [];
+let visibleCount = 0, revealTimer = null, solutionAvailableAt = null;
+let selectionMode = false, selected = new Set(), locked = false, currentRound = null;
+
+const $ = id => document.getElementById(id);
+const home = $("home"), game = $("game"), summary = $("summary");
+const cardsEl = $("cards"), hint = $("hint"), bellBtn = $("bellBtn"), noTenBtn = $("noTenBtn"), submitBtn = $("submitBtn");
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+function combinations(arr, k){
+  const out=[];
+  function rec(start, chosen){
+    if(chosen.length===k){out.push([...chosen]);return;}
+    for(let i=start;i<arr.length;i++){chosen.push(i);rec(i+1,chosen);chosen.pop();}
+  }
+  rec(0,[]);
+  return out;
+}
+function solutions(values, lvl){
+  const sols=[];
+  if(lvl===1 || lvl===2){
+    if(values.length>=2 && values[0]+values[1]===10) sols.push([0,1]);
+  } else if(lvl===3){
+    if(values.length===3 && values.reduce((a,b)=>a+b,0)===10) sols.push([0,1,2]);
+  } else {
+    for(const k of [2,3]){
+      for(const idxs of combinations(values,k)){
+        const s=idxs.reduce((t,i)=>t+values[i],0);
+        if(s===10) sols.push(idxs);
+      }
+    }
+  }
+  return sols;
+}
+
+const pairs = [[1,9],[2,8],[3,7],[4,6],[5,5]];
+const triples = [[1,2,7],[1,3,6],[1,4,5],[2,2,6],[2,3,5],[2,4,4],[3,3,4]];
+
+function nearNoSolution2(){
+  const candidates=[];
+  for(let a=1;a<=9;a++) for(let b=1;b<=9;b++){
+    const s=a+b;
+    if(s!==10 && [8,9,11,12].includes(s)) candidates.push([a,b]);
+  }
+  return shuffle(candidates)[0];
+}
+function nearNoSolution3(){
+  const candidates=[];
+  for(let a=1;a<=8;a++) for(let b=1;b<=8;b++) for(let c=1;c<=8;c++){
+    const s=a+b+c;
+    if(s!==10 && [8,9,11,12].includes(s)) candidates.push([a,b,c]);
+  }
+  return shuffle(candidates)[0];
+}
+function genL4Solved(){
+  for(let tries=0;tries<500;tries++){
+    const size = Math.random()<0.5?2:3;
+    const target = size===2 ? shuffle(pairs)[0] : shuffle(triples)[0];
+    const dCount = 4-target.length;
+    let vals=[...target];
+    while(vals.length<4) vals.push(1+Math.floor(Math.random()*9));
+    vals=shuffle(vals);
+    const sols=solutions(vals,4);
+    const total=vals.reduce((a,b)=>a+b,0);
+    if(sols.length===1 && total!==10) return vals;
+  }
+  return [1,2,7,4];
+}
+function genL4No(){
+  for(let tries=0;tries<1000;tries++){
+    const vals=Array.from({length:4},()=>1+Math.floor(Math.random()*9));
+    const sols=solutions(vals,4);
+    const total=vals.reduce((a,b)=>a+b,0);
+    if(sols.length===0 && total!==10) return vals;
+  }
+  return [1,1,2,3];
+}
+
+function buildRoundPlan(lvl){
+  let solvable;
+  if(lvl===1) solvable=Array(10).fill(true);
+  if(lvl===2) solvable=shuffle([...Array(8).fill(true),...Array(2).fill(false)]);
+  if(lvl===3) solvable=shuffle([...Array(8).fill(true),...Array(2).fill(false)]);
+  if(lvl===4) solvable=shuffle([...Array(8).fill(true),...Array(2).fill(false)]);
+  return solvable.map((has,i)=>{
+    let values, types;
+    if(lvl===1){
+      values=shuffle(shuffle(pairs)[0]); types=["dot","dot"];
+    } else if(lvl===2){
+      values=has?shuffle(shuffle(pairs)[0]):nearNoSolution2(); types=["num","num"];
+    } else if(lvl===3){
+      values=has?shuffle(shuffle(triples)[0]):nearNoSolution3(); types=["num","num","num"];
+    } else {
+      values=has?genL4Solved():genL4No(); types=["num","num","num","num"];
+    }
+    return {values,types,hasSolution:solutions(values,lvl).length>0};
+  });
+}
+
+const dotPositions = {
+  1:[4],
+  2:[0,8],
+  3:[0,4,8],
+  4:[0,2,6,8],
+  5:[0,2,4,6,8],
+  6:[0,2,3,5,6,8],
+  7:[0,2,3,4,5,6,8],
+  8:[0,1,2,3,5,6,7,8],
+  9:[0,1,2,3,4,5,6,7,8]
+};
+function cardHTML(value,type,idx){
+  if(type==="num") return `<div class="card disabled" data-idx="${idx}"><div class="num">${value}</div></div>`;
+  const used=new Set(dotPositions[value]||[]);
+  let dots="";
+  for(let i=0;i<9;i++) dots+=`<span class="dot ${used.has(i)?"":"empty"}"></span>`;
+  return `<div class="card disabled" data-idx="${idx}"><div class="dots">${dots}</div></div>`;
+}
+
+function startGame(lvl){
+  level=lvl; round=0; score=0; results=[]; rounds=buildRoundPlan(level);
+  home.classList.add("hidden"); summary.classList.add("hidden"); game.classList.remove("hidden");
+  $("levelName").textContent=LEVELS[level].name;
+  nextRound();
+}
+function nextRound(){
+  clearTimeout(revealTimer);
+  selectionMode=false; selected.clear(); locked=false; visibleCount=0; solutionAvailableAt=null;
+  currentRound=rounds[round];
+  $("roundNum").textContent=round+1; $("score").textContent=score;
+  $("progressBar").style.width=`${round*10}%`;
+  cardsEl.innerHTML=currentRound.values.map((v,i)=>cardHTML(v,currentRound.types[i],i)).join("");
+  hint.textContent="看清楚每张牌，发现能凑10就按铃。";
+  bellBtn.disabled=false; noTenBtn.disabled=true; submitBtn.classList.add("hidden");
+  $("feedback").className="feedback hidden";
+  revealNext();
+}
+function revealNext(){
+  if(locked) return;
+  const cards=[...cardsEl.querySelectorAll(".card")];
+  if(visibleCount>=cards.length){
+    noTenBtn.disabled=false;
+    if(!solutionAvailableAt && currentVisibleSolutions().length>0) solutionAvailableAt=performance.now();
+    hint.textContent="全部牌已出现。能凑10就抢；确定无解可以点“没有10”。";
+    return;
+  }
+  const card=cards[visibleCount];
+  card.classList.remove("disabled");
+  card.classList.add("revealing");
+  visibleCount++;
+  const sols=currentVisibleSolutions();
+  if(sols.length>0 && solutionAvailableAt===null){
+    solutionAvailableAt=performance.now();
+    hint.textContent="现在可能已经有10了……";
+  }else{
+    hint.textContent=`已翻开 ${visibleCount}/${cards.length} 张`;
+  }
+  revealTimer=setTimeout(revealNext, LEVELS[level].speed);
+}
+function currentVisibleValues(){
+  return currentRound.values.slice(0,visibleCount);
+}
+function currentVisibleSolutions(){
+  const vals=currentVisibleValues();
+  if(level===1 || level===2){
+    if(vals.length<2) return [];
+    return solutions(vals.slice(0,2),level);
+  }
+  if(level===3){
+    if(vals.length<3) return [];
+    return solutions(vals.slice(0,3),level);
+  }
+  return solutions(vals,4);
+}
+
+function tone(kind){
+  try{
+    const Ctx=window.AudioContext||window.webkitAudioContext;
+    const ctx=new Ctx(), osc=ctx.createOscillator(), gain=ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value=kind==="good"?740:220;
+    gain.gain.setValueAtTime(.08,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.18);
+    osc.start(); osc.stop(ctx.currentTime+.18);
+  }catch(e){}
+}
+function showFeedback(good,big,text){
+  locked=true; clearTimeout(revealTimer);
+  const f=$("feedback"); f.className=`feedback ${good?"good":"bad"}`;
+  $("feedbackBig").textContent=big; $("feedbackText").textContent=text;
+  tone(good?"good":"bad");
+}
+function finalizeRound(correct,reactionMs,delta,big,text){
+  score+=delta;
+  results.push({correct,reactionMs,delta});
+  $("score").textContent=score;
+  showFeedback(correct,big,text);
+}
+
+bellBtn.addEventListener("click",()=>{
+  if(locked || selectionMode) return;
+  const sols=currentVisibleSolutions();
+  if(sols.length===0){
+    finalizeRound(false,null,-5,"抢早了","当前还没有能凑成10的组合，-5分。");
+    return;
+  }
+  clearTimeout(revealTimer);
+  selectionMode=true;
+  bellBtn.disabled=true; noTenBtn.disabled=true; submitBtn.classList.remove("hidden");
+  hint.textContent="抢到了！请点选你认为能凑成10的牌，再确认。";
+  [...cardsEl.querySelectorAll(".card")].forEach((c,i)=>{
+    if(i<visibleCount){
+      c.classList.remove("disabled");
+      c.addEventListener("click",()=>toggleCard(i,c));
+    }
+  });
+});
+function toggleCard(i,c){
+  if(!selectionMode||i>=visibleCount)return;
+  if(selected.has(i)){selected.delete(i);c.classList.remove("selected")}
+  else{selected.add(i);c.classList.add("selected")}
+}
+submitBtn.addEventListener("click",()=>{
+  if(!selectionMode)return;
+  const idxs=[...selected].sort((a,b)=>a-b);
+  const vals=idxs.map(i=>currentRound.values[i]);
+  const sum=vals.reduce((a,b)=>a+b,0);
+  const sizeOK = level<=2 ? idxs.length===2 : level===3 ? idxs.length===3 : (idxs.length===2||idxs.length===3);
+  const correct = sizeOK && sum===10;
+  const reaction = correct && solutionAvailableAt ? performance.now()-solutionAvailableAt : null;
+  if(correct){
+    finalizeRound(true,reaction,10,"答对了！",`${vals.join(" + ")} = 10，+10分。`);
+  }else{
+    finalizeRound(false,null,-3,"组合不对", idxs.length?`${vals.join(" + ")} = ${sum}，-3分。`:"还没有选择牌，-3分。");
+  }
+  selectionMode=false; submitBtn.classList.add("hidden");
+});
+
+noTenBtn.addEventListener("click",()=>{
+  if(locked || visibleCount<currentRound.values.length)return;
+  const sols=solutions(currentRound.values,level);
+  if(sols.length===0){
+    finalizeRound(true,null,10,"判断正确","这一轮确实没有10，+10分。");
+  }else{
+    finalizeRound(false,null,-5,"其实有10","再看看牌面中的关系，-5分。");
+  }
+});
+
+$("nextBtn").addEventListener("click",()=>{
+  round++;
+  if(round>=10){finishGame();}else{nextRound();}
+});
+function finishGame(){
+  game.classList.add("hidden"); summary.classList.remove("hidden");
+  $("progressBar").style.width="100%";
+  const correct=results.filter(r=>r.correct).length;
+  const wrong=results.length-correct;
+  const reactions=results.map(r=>r.reactionMs).filter(v=>v!=null);
+  const avg=reactions.length?Math.round(reactions.reduce((a,b)=>a+b,0)/reactions.length):null;
+  $("summaryTitle").textContent=`${LEVELS[level].name} 完成`;
+  $("finalScore").textContent=score;
+  $("accuracy").textContent=`${Math.round(correct/results.length*100)}%`;
+  $("avgReaction").textContent=avg?`${(avg/1000).toFixed(2)}秒`:"—";
+  $("correctCount").textContent=correct;
+  $("wrongCount").textContent=wrong;
+}
+$("retryBtn").addEventListener("click",()=>startGame(level));
+$("homeBtn").addEventListener("click",()=>{summary.classList.add("hidden");home.classList.remove("hidden");});
+$("quitBtn").addEventListener("click",()=>{
+  clearTimeout(revealTimer); game.classList.add("hidden"); home.classList.remove("hidden");
+});
+document.querySelectorAll(".level-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>startGame(Number(btn.dataset.level)));
+});
+</script>
+</body>
+</html>
