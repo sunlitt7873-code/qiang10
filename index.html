@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>抢10｜动物版 v0.9</title>
+  <title>抢10｜动物版 v0.10</title>
   <style>
     :root { --ink:#163244; --muted:#607c8a; --blue:#1896c4; --orange:#ff9b2f; --red:#d64040; --line:#d5edf6 }
     * { box-sizing:border-box; -webkit-tap-highlight-color:transparent }
@@ -58,19 +58,20 @@
     }
     @media(prefers-reduced-motion:reduce) { .card { transition:none } .card.blocked { animation:none } }
   </style>
-  <script src="game-v09.js" defer></script>
+  <script src="game-v10.js" defer></script>
   <script src="app-v09.js" defer></script>
 </head>
 <body>
   <main class="app">
     <section id="home" class="panel home">
-      <span class="tag">动物版 · 60秒挑战</span><h1>抢10 <span class="ver">v0.9</span></h1>
+      <span class="tag">动物版 · 60秒挑战</span><h1>抢10 <span class="ver">v0.10</span></h1>
       <p class="lead">从6张动物卡中选择若干张，让其中任意一种动物的数量总和恰好等于10。</p>
       <div class="rules">
         点击整张卡选择；再次点击已选卡，可以取消。<br>
         每张卡里的两种动物，都要一起计算。<br>
-        <b>任何一种动物超过10，这张新卡不能加入。</b><br>
-        两种都没超过10，且任意一种恰好等于10，就立即换题。<br>
+        <b>规则B：只要任意一种动物恰好等于10，就立即成功。</b><br>
+        另一种动物即使超过10，也不影响成功。<br>
+        只有在没有任何一种动物等于10时，若某一种动物超过10，这张新卡才不能加入。<br>
         60秒内，看看你能完成多少组！
       </div>
       <button id="startBtn" class="primary" disabled>正在加载卡片…</button>
@@ -79,11 +80,11 @@
     </section>
     <section id="game" class="panel" hidden>
       <div class="top">
-        <div class="name">抢10 <span class="ver">v0.9</span></div>
+        <div class="name">抢10 <span class="ver">v0.10 · 规则B</span></div>
         <div class="metrics"><div class="pill">完成 <b id="done">0</b> 组</div><div id="timer" class="pill timer" aria-label="剩余秒数">60.0</div></div>
       </div>
       <div id="board" class="board" aria-label="六张动物卡"></div>
-      <p class="note">橙框表示已选，再点可取消。凑成10立即换题。</p>
+      <p class="note">橙框表示已选，再点可取消。任意一种动物=10就立即换题。</p>
       <div id="debug" class="debug" hidden></div>
     </section>
     <section id="result" class="panel result" hidden>
@@ -92,12 +93,12 @@
       <div class="stats">
         <div class="stat"><b id="fastest">—</b><span>最快完成</span></div>
         <div class="stat"><b id="average">—</b><span>平均每题</span></div>
-        <div class="stat"><b id="blockedCount">0</b><span>超过10，被拒绝的点击</span></div>
+        <div class="stat"><b id="blockedCount">0</b><span>无10且超过10，被拒绝</span></div>
         <div class="stat"><b id="cancelled">0</b><span>取消已选卡次数</span></div>
       </div>
       <button id="againBtn" class="primary">再玩60秒</button><button id="backBtn" class="secondary">返回规则</button>
     </section>
   </main>
-  <div id="toast" class="toast" role="status">超过10，这张卡不能选</div>
+  <div id="toast" class="toast" role="status">没有凑成10，而且超过10，这张卡不能选</div>
 </body>
 </html>
