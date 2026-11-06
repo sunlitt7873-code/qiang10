@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>博理《凑十》｜第一关测试</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #162f42;
+      --muted: #445e70;
+      --line: #bfd3de;
+      --blue: #136991;
+      font-family: system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background: #f0f7fa;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+
+    main {
+      width: min(34rem, calc(100% - 2rem));
+      margin-inline: auto;
+      padding-block: clamp(1.25rem, 5vh, 3rem);
+    }
+
+    .level {
+      display: inline-block;
+      padding: .35rem .65rem;
+      border-radius: 999px;
+      color: #175476;
+      background: #dceef7;
+      font-size: .875rem;
+      font-weight: 700;
+    }
+
+    h1 { margin: .45rem 0 .25rem; font-size: clamp(2.25rem, 8vw, 3.25rem); }
+    .goal { margin: 0 0 1.25rem; font-size: 1.0625rem; line-height: 1.65; }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(.5rem, 2.5vw, .9rem);
+    }
+
+    .card {
+      position: relative;
+      display: grid;
+      place-items: center;
+      height: clamp(5.5rem, 30vw, 9rem);
+      padding: 0;
+      border: 2px solid var(--line);
+      border-radius: .9rem;
+      background: #fff;
+      color: inherit;
+      box-shadow: 0 3px 0 #dce9f0;
+      font: inherit;
+      font-size: clamp(2.5rem, 10vw, 4rem);
+      font-weight: 750;
+      line-height: 1;
+      cursor: pointer;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .card:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+    .card[aria-pressed="true"] { border-color: var(--blue); background: #d9effa; }
+
+    .badge, .card[aria-pressed="true"]::after {
+      position: absolute;
+      inset: .35rem .4rem auto auto;
+      font-size: clamp(1.1rem, 5vw, 1.55rem);
+      line-height: 1;
+    }
+
+    .card[aria-pressed="true"]::after { content: "✓"; color: var(--blue); }
+    .card[data-group="1"] { border-color: #448363; background: #e4f4ea; }
+    .card[data-group="2"] { border-color: #7862a9; background: #f0eafa; }
+    .card[data-group="3"] { border-color: #a16b27; background: #fff0d8; }
+
+    .status {
+      margin-top: 1.25rem;
+      padding: .85rem 1rem;
+      border: 1px solid var(--line);
+      border-radius: .9rem;
+      background: #fff;
+    }
+
+    .counts {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: .25rem .75rem;
+      color: var(--muted);
+      font-size: .9375rem;
+    }
+
+    .counts strong { color: var(--ink); }
+    .feedback { margin: .4rem 0 0; font-weight: 650; line-height: 1.55; }
+    .status[data-state="over"] .feedback { color: #8a421b; }
+    .status[data-state="passed"] { border-color: #448363; background: #e4f4ea; }
+    .status[data-state="passed"] .feedback { color: #235b3c; font-size: 1.3rem; }
+    .tip { margin: .7rem 0 0; color: var(--muted); font-size: .875rem; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <span class="level">博理数学 · 第一关测试</span>
+      <h1>凑十</h1>
+      <p class="goal">把 6 张牌分成 <strong>3 组</strong>，每组加起来正好是 <strong>10</strong>。</p>
+    </header>
+
+    <div class="board" id="board" role="group" aria-label="六张数字牌" aria-describedby="tip"></div>
+
+    <div class="status" id="status" role="status" aria-atomic="true">
+      <div class="counts">
+        <span>当前合计 <strong id="total">0</strong></span>
+        <span>已完成 <strong id="progress">0 / 3</strong> 组</span>
+      </div>
+      <p class="feedback" id="feedback">点一张牌开始。</p>
+    </div>
+    <p class="tip" id="tip">再点选中的牌可取消。点带组号的牌可撤销整组。</p>
+    <noscript>请开启 JavaScript 后试玩。</noscript>
+  </main>
+
+  <script>
+    'use strict';
+
+    const cards = [1, 9, 2, 8, 3, 7].map((value, id) => ({ id, value }));
+    const targetSum = 10;
+    const groupLabels = ['①', '②', '③'];
+    const selectedIds = new Set();
+    const groups = [];
+
+    const board = document.querySelector('#board');
+    const status = document.querySelector('#status');
+    const total = document.querySelector('#total');
+    const progress = document.querySelector('#progress');
+    const feedback = document.querySelector('#feedback');
+
+    const cardButtons = cards.map(({ id, value }) => {
+      const button = document.createElement('button');
+      const badge = document.createElement('span');
+      button.type = 'button';
+      button.className = 'card';
+      button.textContent = value;
+      badge.className = 'badge';
+      badge.setAttribute('aria-hidden', 'true');
+      button.append(badge);
+      button.addEventListener('click', () => pickCard(id));
+      board.append(button);
+      return { button, badge };
+    });
+
+    function sum(cardIds) {
+      let result = 0;
+      for (const id of cardIds) result += cards[id].value;
+      return result;
+    }
+
+    function pickCard(id) {
+      const groupIndex = groups.findIndex(group => group.cardIds.includes(id));
+      if (groupIndex !== -1) {
+        groups.splice(groupIndex, 1);
+        selectedIds.clear();
+      } else {
+        if (selectedIds.has(id)) selectedIds.delete(id);
+        else selectedIds.add(id);
+
+        if (selectedIds.size >= 2 && sum(selectedIds) === targetSum) {
+          const number = groupLabels.findIndex((_, index) =>
+            !groups.some(group => group.number === index + 1)
+          ) + 1;
+          groups.push({ number, cardIds: [...selectedIds] });
+          selectedIds.clear();
+        }
+      }
+      render();
+    }
+
+    function render() {
+      for (const { id, value } of cards) {
+        const { button, badge } = cardButtons[id];
+        const group = groups.find(group => group.cardIds.includes(id));
+        if (group) {
+          button.dataset.group = group.number;
+          button.removeAttribute('aria-pressed');
+          button.setAttribute('aria-label', `数字 ${value}，第 ${group.number} 组，点此撤销整组`);
+          badge.textContent = groupLabels[group.number - 1];
+        } else {
+          delete button.dataset.group;
+          button.setAttribute('aria-pressed', String(selectedIds.has(id)));
+          button.setAttribute('aria-label', `数字 ${value}`);
+          badge.textContent = '';
+        }
+      }
+
+      const currentSum = sum(selectedIds);
+      const groupedIds = groups.flatMap(group => group.cardIds);
+      const passed = groups.length === groupLabels.length &&
+        groupedIds.length === cards.length &&
+        cards.every(({ id }) => groupedIds.includes(id)) &&
+        groups.every(group => sum(group.cardIds) === targetSum);
+
+      total.textContent = currentSum;
+      progress.textContent = `${groups.length} / ${groupLabels.length}`;
+      if (passed) {
+        status.dataset.state = 'passed';
+        feedback.textContent = '本关完成';
+      } else if (currentSum > targetSum) {
+        status.dataset.state = 'over';
+        feedback.textContent = '超过 10 了，点一张已选中的牌试试。';
+      } else {
+        status.dataset.state = 'playing';
+        feedback.textContent = currentSum ? '凑到 10 就会自动成组。' : '点牌凑出一组 10。';
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
