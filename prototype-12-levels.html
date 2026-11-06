@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>博理数学｜凑十 · 12关测试</title>
+<style>
+:root{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:#203447;background:#f4f7f8;color-scheme:light}
+*{box-sizing:border-box}body{margin:0}button{font:inherit;touch-action:manipulation}
+main{width:min(760px,calc(100% - 24px));margin:0 auto;padding:18px 0 35px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:9px}.brand{font-size:13px;color:#416379;font-weight:700}.phase{color:#7a828b;font-size:12px}
+h1{margin:3px 0 8px;font-size:clamp(28px,5vw,37px);letter-spacing:.02em}.subtitle{font-size:15px;color:#516778;line-height:1.6;margin:0 0 13px}
+.track{background:#dce9ed;border-radius:999px;height:8px;overflow:hidden;margin-bottom:17px}.track>div{height:100%;width:8.3333%;background:#347a91;transition:width .22s}
+.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.board[data-count="8"],.board[data-count="12"],.board[data-count="18"],.board[data-count="24"]{grid-template-columns:repeat(4,minmax(0,1fr))}
+.card{position:relative;display:grid;place-items:center;min-width:0;min-height:100px;padding:0;border:2px solid #c8d7dd;border-radius:12px;background:#fff;color:#203447;box-shadow:0 3px 0 #e0e8ec;font-size:clamp(30px,7vw,52px);font-weight:750;line-height:1;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.card:focus-visible{outline:3px solid #12768e;outline-offset:2px}.card[aria-pressed="true"]{border-color:#147995;background:#e0f4f8}.check,.group-label{position:absolute;top:5px;right:6px;line-height:1;font-size:18px;font-weight:700}.check{color:#087c9d}.group-label{width:23px;height:23px;border-radius:50%;display:grid;place-items:center;color:#224a3b;background:#d0e9d8}
+.card[data-group]{border-color:#7fb49b;background:#e5f4eb}.card[data-group="2"],.card[data-group="5"],.card[data-group="8"],.card[data-group="11"]{border-color:#b3a0d8;background:#f0ebfa}.card[data-group="3"],.card[data-group="6"],.card[data-group="9"],.card[data-group="12"]{border-color:#d2b282;background:#fcf2e5}
+.board[data-count="18"] .card,.board[data-count="24"] .card{min-height:83px;font-size:39px}
+.panel{margin-top:17px;border:1px solid #cadce2;border-radius:13px;padding:14px 15px;background:#fff}.stats{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:#526779;font-size:14px}.stats strong{color:#263f50}.feedback{margin:10px 0 0;font-weight:650;line-height:1.6;min-height:24px}.panel[data-status="passed"]{border-color:#84b99a;background:#e8f6ee}.panel[data-status="passed"] .feedback{color:#21633a}.panel[data-status="warn"] .feedback{color:#9a5a29}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}.actions button{border:1px solid #c0d1d9;background:#fff;color:#265066;border-radius:10px;padding:11px 14px;cursor:pointer;font-size:14px;font-weight:650;min-height:44px}.actions .primary{background:#126980;color:#fff;border-color:#126980}.actions button:disabled{opacity:.48;cursor:default}.help{font-size:13px;line-height:1.7;color:#647987;margin:15px 0 0}.foot{margin-top:22px;color:#87949d;font-size:12px}
+@media(min-width:610px){main{padding-top:30px}.board[data-count="18"],.board[data-count="24"]{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media(max-width:450px){main{width:calc(100% - 18px);padding-top:15px}.board{gap:7px}.card{min-height:92px;border-radius:10px}.board[data-count="8"] .card,.board[data-count="12"] .card{min-height:81px}.board[data-count="18"] .card,.board[data-count="24"] .card{min-height:65px;font-size:31px}.check,.group-label{font-size:16px;top:4px;right:4px}.group-label{width:19px;height:19px}.panel{padding:12px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <header><div class="top"><span class="brand">予山海 · 博理数学</span><span class="phase">独立测试版 · B01</span></div>
+    <h1>凑十 <span id="headingLevel">第 1 / 12 关</span></h1>
+    <p class="subtitle" id="instructions">把 6 张牌分成 3 组，每组正好 10。全部分完就能过关。</p><div class="track" aria-hidden="true"><div id="trackFill"></div></div>
+  </header>
+  <div class="board" id="board" role="group" aria-label="凑十数字牌"></div>
+  <div class="panel" id="panel" role="status" aria-live="polite" aria-atomic="true">
+    <div class="stats"><span>本次选择：<strong id="selectedSum">0</strong></span><span>已完成：<strong id="groupCount">0 / 3</strong> 组</span><span>剩余：<strong id="remainingCount">6</strong> 张</span></div>
+    <p class="feedback" id="feedback">点一张数字牌开始。</p>
+  </div>
+  <div class="actions"><button id="clearSelection">清空当前选择</button><button id="restartLevel">重新尝试本关</button><button class="primary" id="nextLevel" hidden>进入下一关</button></div>
+  <p class="help">点击数字牌选择；凑成 10 时自动标记一组。点击已标记组的任意一张，可以取消整组。不同的正确分法都有效。</p>
+  <p class="foot">目前仅供测试：使用固定数字牌，不含圆点/海洋图案及每日时间限制；不会修改原《抢10》。</p>
+</main>
+<script>
+'use strict';
+// Fixed verified scenarios: each level has a known exact partition into the target number of groups.
+const LEVELS = [{"number":1,"cards":[1,9,2,8,3,7],"groupTarget":3,"focus":"两张凑10入门"},{"number":2,"cards":[7,1,3,4,2,3],"groupTarget":2,"focus":"较长组合初体验"},{"number":3,"cards":[5,2,3,5,1,8,9,7],"groupTarget":4,"focus":"增加干扰牌、观察配对"},{"number":4,"cards":[3,5,2,6,5,4,4,1],"groupTarget":3,"focus":"二张与三张组合"},{"number":5,"cards":[8,5,1,4,9,9,5,7,6,2,1,3],"groupTarget":6,"focus":"多组两张配对"},{"number":6,"cards":[9,7,7,1,4,5,3,6,3,2,1,2],"groupTarget":5,"focus":"二张、三张混合"},{"number":7,"cards":[4,3,2,1,9,1,3,2,4,4,1,6],"groupTarget":4,"focus":"引入五张组合"},{"number":8,"cards":[4,9,8,6,5,7,2,8,3,2,9,5,3,1,7,4,1,6],"groupTarget":9,"focus":"大量两张配对"},{"number":9,"cards":[5,1,1,1,2,9,5,3,8,3,1,3,3,4,4,2,3,2],"groupTarget":6,"focus":"二至五张混合"},{"number":10,"cards":[9,6,6,2,1,3,8,8,2,5,8,2,9,5,4,4,3,1,9,7,5,7,1,5],"groupTarget":12,"focus":"24张大牌面配对"},{"number":11,"cards":[8,9,4,2,6,7,3,8,7,5,3,5,2,5,9,2,1,1,1,1,2,1,4,4],"groupTarget":10,"focus":"大牌面中的长短组合"},{"number":12,"cards":[2,1,9,8,1,2,5,4,3,3,7,1,3,3,2,1,1,4,5,1,4,6,1,3],"groupTarget":8,"focus":"综合挑战：二、三、四、五张"}];
+const LABELS=['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫'];
+const $=id=>document.getElementById(id);
+const board=$('board'),panel=$('panel'),feedback=$('feedback');
+const nextButton=$('nextLevel');
+const params=new URLSearchParams(location.search);
+const devLevel=Number(params.get('level'));
+let levelIndex=Number.isInteger(devLevel)&&devLevel>=1&&devLevel<=12?devLevel-1:0;
+let cards=[], selected=new Set(), groups=[], passed=false;
+
+function loadLevel(index){
+  levelIndex=index;const level=LEVELS[levelIndex];
+  cards=level.cards.map((value,id)=>({id,value}));selected=new Set();groups=[];passed=false;
+  $('headingLevel').textContent=`第 ${level.number} / 12 关`;
+  $('instructions').textContent=`把 ${cards.length} 张牌分成 ${level.groupTarget} 组，每组正好 10。全部分完就能过关。`;
+  $('trackFill').style.width=`${100*(index+1)/LEVELS.length}%`;
+  board.dataset.count=cards.length;
+  board.replaceChildren();
+  cards.forEach(({id,value})=>{
+    const el=document.createElement('button');el.type='button';el.className='card';el.dataset.id=String(id);
+    el.textContent=String(value);el.setAttribute('aria-label',`数字 ${value}`);
+    el.addEventListener('click',()=>pick(id));board.appendChild(el);
+  });
+  nextButton.hidden=true;
+  render();
+}
+function total(ids){let s=0;for(const id of ids)s+=cards[id].value;return s;}
+function pick(id){
+  const existingIndex=groups.findIndex(g=>g.ids.includes(id));
+  if(existingIndex!==-1){groups.splice(existingIndex,1);selected.clear();render('已取消这一组，可以重新选择。');return;}
+  if(selected.has(id)){selected.delete(id);render();return;}
+  // Preserve the original card selection behavior while supporting 2-5 cards per group.
+  if(selected.size===5){render('每组最多选 5 张牌，请先取消一张。','warn');return;}
+  const sumIfAdded=total(selected)+cards[id].value;
+  if(sumIfAdded>10){render('加上这张就超过 10 了，换一张试试。','warn');return;}
+  selected.add(id);
+  if(selected.size>=2&&total(selected)===10){
+    const number=Array.from({length:12},(_,n)=>n+1).find(n=>!groups.some(g=>g.number===n));
+    if(number===undefined){selected.delete(id);render('已经完成所有目标组。','warn');return;}
+    groups.push({number,ids:[...selected]});selected.clear();render('成功凑出一组 10！');return;
+  }
+  render();
+}
+function render(message='',status='playing'){
+  const level=LEVELS[levelIndex];
+  const usedIds=new Set(groups.flatMap(g=>g.ids));
+  passed=groups.length===level.groupTarget&&usedIds.size===cards.length&&
+    groups.every(g=>g.ids.length>=2&&g.ids.length<=5&&total(g.ids)===10)&&
+    groups.reduce((n,g)=>n+g.ids.length,0)===cards.length;
+  [...board.children].forEach((el,id)=>{
+    const group=groups.find(g=>g.ids.includes(id));
+    const value=cards[id].value;el.replaceChildren(document.createTextNode(String(value)));
+    if(group){
+      el.dataset.group=group.number;el.removeAttribute('aria-pressed');
+      const label=document.createElement('span');label.className='group-label';label.textContent=LABELS[group.number-1];label.setAttribute('aria-hidden','true');el.append(label);
+      el.setAttribute('aria-label',`数字 ${value}，第 ${group.number} 组，点击取消整组`);
+    }else{
+      delete el.dataset.group;el.setAttribute('aria-pressed',String(selected.has(id)));
+      if(selected.has(id)){const check=document.createElement('span');check.className='check';check.textContent='✓';check.setAttribute('aria-hidden','true');el.append(check);}
+      el.setAttribute('aria-label',`数字 ${value}`);
+    }
+  });
+  $('selectedSum').textContent=total(selected);
+  $('groupCount').textContent=`${groups.length} / ${level.groupTarget}`;
+  $('remainingCount').textContent=cards.length-usedIds.size;
+  panel.dataset.status=passed?'passed':status;
+  if(passed){
+    feedback.textContent=levelIndex===LEVELS.length-1?'全部 12 关完成！本次测试已通关。':'本关完成！可以进入下一关。';
+    nextButton.hidden=levelIndex===LEVELS.length-1;
+  }else{
+    feedback.textContent=message||(selected.size?'继续选牌，凑成 10 就会自动成组。':'点牌凑出一组 10。');nextButton.hidden=true;
+  }
+  $('clearSelection').disabled=passed||!selected.size;
+}
+$('clearSelection').addEventListener('click',()=>{selected.clear();render('已清空当前选择。');});
+$('restartLevel').addEventListener('click',()=>loadLevel(levelIndex));
+nextButton.addEventListener('click',()=>{if(passed&&levelIndex<LEVELS.length-1)loadLevel(levelIndex+1);});
+loadLevel(levelIndex);
+</script>
+</body>
+</html>
