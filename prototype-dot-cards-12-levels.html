@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<title>博理数学｜凑十 · 圆点与海洋混合12关测试</title>
+<title>博理数学｜凑十 · 圆点卡／海洋卡12关测试</title>
 <style>
 :root{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:#203447;background:#f4f7f8;color-scheme:light}
 *{box-sizing:border-box}body{margin:0}button{font:inherit;touch-action:manipulation}
@@ -33,6 +33,13 @@ h1{margin:3px 0 8px;font-size:clamp(28px,5vw,37px);letter-spacing:.02em}.subtitl
 .group-label,.check{z-index:2;background:#fff;box-shadow:0 1px 5px #0002;border-radius:100%;width:26px;height:26px;display:grid;place-items:center}
 .check{color:#096d86}
 @media(max-width:450px){.group-label,.check{width:23px;height:23px;font-size:16px}}
+.theme-picker{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 10px;padding:12px;border:1px solid #cddce2;background:#fff;border-radius:13px}
+.theme-title{font-size:14px;font-weight:700;color:#365366}
+.theme-buttons{display:flex;gap:8px;flex-wrap:wrap}
+.theme-option{min-height:44px;padding:9px 15px;border:2px solid #ccd9df;border-radius:11px;background:#f9fbfc;color:#34586a;font-weight:700;cursor:pointer}
+.theme-option[aria-pressed="true"]{background:#e3f3ee;border-color:#34836a;color:#1d5b46;box-shadow:0 0 0 2px #34836a13}
+.theme-option:focus-visible{outline:3px solid #126980;outline-offset:2px}
+@media(max-width:450px){.theme-picker{padding:10px}.theme-buttons{width:100%}.theme-option{flex:1}}
 .art-note{display:inline-flex;align-items:center;gap:6px;margin:0 0 12px;border:1px solid #d3dde1;border-radius:999px;background:#fff;padding:5px 11px;color:#506876;font-size:12px}
 .panel[data-status="passed"]{border:2px solid #57a57e;background:#f0f9f3;box-shadow:0 7px 22px #3c91631b}
 .panel[data-status="passed"] .feedback{font-size:22px;color:#205e40;text-align:center}
@@ -55,11 +62,18 @@ h1{margin:3px 0 8px;font-size:clamp(28px,5vw,37px);letter-spacing:.02em}.subtitl
 </head>
 <body>
 <main>
-  <header><div class="top"><span class="brand">予山海 · 博理数学</span><span class="phase">独立测试版 · C03</span></div>
+  <header><div class="top"><span class="brand">予山海 · 博理数学</span><span class="phase">独立测试版 · C04</span></div>
     <h1>凑十 <span id="headingLevel">第 1 / 12 关</span></h1>
     <p class="subtitle" id="instructions">把 6 张牌分成 3 组，每组正好 10。全部分完就能过关。</p><div class="track" aria-hidden="true"><div id="trackFill"></div></div>
   </header>
-  <p class="art-note">圆点＋海洋混合 · 五结构／麻将／圈状三种排列</p>
+  <div class="theme-picker" role="group" aria-label="选择卡片类型">
+    <span class="theme-title">想玩哪一种卡？</span>
+    <div class="theme-buttons">
+      <button type="button" class="theme-option" id="dotTheme" aria-pressed="true">● 圆点卡</button>
+      <button type="button" class="theme-option" id="oceanTheme" aria-pressed="false">🐬 海洋卡</button>
+    </div>
+  </div>
+  <p class="art-note" id="artNote">圆点卡 · 三种数量排列混合</p>
   <div class="board" id="board" role="group" aria-label="凑十数量卡"></div>
   <div class="panel" id="panel" role="status" aria-live="polite" aria-atomic="true">
     <div class="stats"><span>本次选择：<strong id="selectedSum">0</strong></span><span>已完成：<strong id="groupCount">0 / 3</strong> 组</span><span>剩余：<strong id="remainingCount">6</strong> 张</span></div>
@@ -67,7 +81,7 @@ h1{margin:3px 0 8px;font-size:clamp(28px,5vw,37px);letter-spacing:.02em}.subtitl
   </div>
   <div class="actions"><button id="clearSelection">清空当前选择</button><button id="restartLevel">重新尝试本关</button><button class="primary" id="nextLevel" hidden>进入下一关</button></div>
   <p class="help">点击卡片选择；凑成 10 时自动标记一组。点击已标记组的任意一张，可以取消整组。不同的正确分法都有效。</p>
-  <p class="foot">测试版：圆点卡与海洋卡在每关共同出现；暂不限制每日时间，不影响原《抢10》。</p>
+  <p class="foot">测试版：先选圆点卡或海洋卡，同一关不混用两种主题；切换只改变卡面，不清除进度。暂不限制每日时间。</p>
 </main>
 <div class="finish-overlay" id="finishOverlay" role="dialog" aria-modal="true" aria-labelledby="finishTitle" hidden>
  <div class="finish-sheet">
@@ -97,20 +111,30 @@ const params=new URLSearchParams(location.search);
 const devLevel=Number(params.get('level'));
 let levelIndex=Number.isInteger(devLevel)&&devLevel>=1&&devLevel<=12?devLevel-1:0;
 let cards=[], selected=new Set(), groups=[], passed=false;
-// All six teacher-created face families appear together in every level.
-const CARD_VARIANTS = [
- {theme:'dot',layout:'five'},
- {theme:'ocean',layout:'mahjong'},
- {theme:'dot',layout:'factor'},
- {theme:'ocean',layout:'five'},
- {theme:'dot',layout:'mahjong'},
- {theme:'ocean',layout:'factor'}
-];
-function artFor(card){return (card.theme==='ocean'?OCEAN_ART:DOT_ART)[card.layout][card.value-1];}
-function describeTheme(card){return card.theme==='ocean'?'海洋动物卡':'圆点卡';}
+// One theme per board. Each theme retains all three teacher-provided quantity layouts.
+let theme='dot';
+function artFor(card){return (theme==='ocean'?OCEAN_ART:DOT_ART)[card.layout][card.value-1];}
+function describeTheme(){return theme==='ocean'?'海洋动物卡':'圆点卡';}
+function updateThemeControls(){
+  $('dotTheme').setAttribute('aria-pressed',String(theme==='dot'));
+  $('oceanTheme').setAttribute('aria-pressed',String(theme==='ocean'));
+  $('artNote').textContent=(theme==='dot'?'圆点卡':'海洋卡')+' · 五结构／麻将／圈状三种排列混合';
+}
+function changeTheme(next){
+  if(theme===next)return;
+  theme=next;
+  updateThemeControls();
+  for(const card of cards){
+    const el=board.children[card.id];
+    el.querySelector('.card-art').src=artFor(card);
+  }
+  render();
+}
+$('dotTheme').addEventListener('click',()=>changeTheme('dot'));
+$('oceanTheme').addEventListener('click',()=>changeTheme('ocean'));
 function loadLevel(index){
   levelIndex=index;const level=LEVELS[levelIndex];
-  cards=level.cards.map((value,id)=>({id,value,...CARD_VARIANTS[(id+index)%CARD_VARIANTS.length]}));selected=new Set();groups=[];passed=false;
+  cards=level.cards.map((value,id)=>({id,value,layout:LAYOUT_KEYS[(id+index)%LAYOUT_KEYS.length]}));selected=new Set();groups=[];passed=false;
   $('finishOverlay').hidden=true;
   $('headingLevel').textContent=`第 ${level.number} / 12 关`;
   $('instructions').textContent=`把 ${cards.length} 张牌分成 ${level.groupTarget} 组，每组正好 10。全部分完就能过关。`;
@@ -120,7 +144,7 @@ function loadLevel(index){
   cards.forEach(({id,value})=>{
     const el=document.createElement('button');el.type='button';el.className='card';el.dataset.id=String(id);
     const pic=document.createElement('img');pic.className='card-art';pic.src=artFor(cards[id]);pic.alt='';pic.draggable=false;el.append(pic);
-    el.setAttribute('aria-label',`数量 ${value} 的${describeTheme(cards[id])}`);
+    el.setAttribute('aria-label',`数量 ${value} 的${describeTheme()}`);
     el.addEventListener('click',()=>pick(id));board.appendChild(el);
   });
   nextButton.hidden=true;
@@ -156,11 +180,11 @@ function render(message='',status='playing'){
     if(group){
       el.dataset.group=group.number;el.removeAttribute('aria-pressed');
       const label=document.createElement('span');label.className='group-label';label.textContent=LABELS[group.number-1];label.setAttribute('aria-hidden','true');el.append(label);
-      el.setAttribute('aria-label',`数量 ${value} 的${describeTheme(cards[id])}，第 ${group.number} 组，点击取消整组`);
+      el.setAttribute('aria-label',`数量 ${value} 的${describeTheme()}，第 ${group.number} 组，点击取消整组`);
     }else{
       delete el.dataset.group;el.setAttribute('aria-pressed',String(selected.has(id)));
       if(selected.has(id)){const check=document.createElement('span');check.className='check';check.textContent='✓';check.setAttribute('aria-hidden','true');el.append(check);}
-      el.setAttribute('aria-label',`数量 ${value} 的${describeTheme(cards[id])}`);
+      el.setAttribute('aria-label',`数量 ${value} 的${describeTheme()}`);
     }
   });
   $('selectedSum').textContent=total(selected);
@@ -182,6 +206,7 @@ $('restartAll').addEventListener('click',()=>loadLevel(0));
 $('clearSelection').addEventListener('click',()=>{selected.clear();render('已清空当前选择。');});
 $('restartLevel').addEventListener('click',()=>loadLevel(levelIndex));
 nextButton.addEventListener('click',()=>{if(passed&&levelIndex<LEVELS.length-1)loadLevel(levelIndex+1);});
+updateThemeControls();
 loadLevel(levelIndex);
 </script>
 </body>
